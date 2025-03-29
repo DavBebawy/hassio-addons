@@ -1,0 +1,15 @@
+#!/usr/bin/with-contenv bashio
+# ==============================================================================
+# Take down the S6 supervision tree when HomeBOX fails
+# ==============================================================================
+
+declare EXIT_CODE=${1}
+
+bashio::log.info "Service 'homebox' exited with code ${EXIT_CODE}"
+
+if [[ "${EXIT_CODE}" -ne 0 ]] && [[ "${EXIT_CODE}" -ne 256 ]]; then
+  bashio::log.warning "HomeBox crashed with exit code ${EXIT_CODE}"
+  bashio::addon.stop
+fi
+
+exit ${EXIT_CODE} 

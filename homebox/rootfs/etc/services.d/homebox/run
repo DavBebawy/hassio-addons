@@ -1,0 +1,22 @@
+#!/usr/bin/with-contenv bashio
+# ==============================================================================
+# Start HomeBox
+# ==============================================================================
+
+# Set environment variables
+export HBOX_MODE=production
+export HBOX_STORAGE_DATA=/data/
+export HBOX_DATABASE_SQLITE_PATH=/data/homebox.db?_pragma=busy_timeout=2000&_pragma=journal_mode=WAL&_fk=1&_time_format=sqlite
+
+# Set up SSL if enabled
+SSL=$(bashio::config 'ssl')
+if [ "$SSL" = "true" ]; then
+    export HBOX_SERVER_TLS_CERT=/data/cert.pem
+    export HBOX_SERVER_TLS_KEY=/data/key.pem
+    export HBOX_SERVER_TLS=true
+fi
+
+bashio::log.info "Starting HomeBox..."
+
+# Start HomeBox
+exec /app/api /data/config.yml 

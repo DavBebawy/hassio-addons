@@ -1,0 +1,10 @@
+{
+  "build_from": {
+    "aarch64": "ghcr.io/sysadminsmedia/homebox:latest",
+    "amd64": "ghcr.io/sysadminsmedia/homebox:latest",
+    "armv7": "ghcr.io/sysadminsmedia/homebox:latest"
+  },
+  "codenotary": {
+    "signer": "52139648+DavBebawy@users.noreply.github.com"
+  }
+} 

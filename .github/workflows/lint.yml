@@ -1,0 +1,53 @@
+name: Lint Add-on
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'homebox/**'
+  pull_request:
+    branches:
+      - main
+    paths:
+      - 'homebox/**'
+  workflow_dispatch:
+
+jobs:
+  lint-addon:
+    name: Lint Add-on
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Validate add-on config
+        run: |
+          echo "Validating config.json..."
+          jq empty homebox/config.json
+          echo "Validating build.json..."
+          jq empty homebox/build.json
+          echo "Checking Dockerfile..."
+          if [ ! -f homebox/Dockerfile ]; then
+            echo "ERROR: Dockerfile not found"
+            exit 1
+          fi
+
+      - name: Lint Dockerfile
+        uses: brpaz/hadolint-action@v1.5.0
+        with:
+          dockerfile: homebox/Dockerfile
+
+  lint-docs:
+    name: Lint Documentation
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Vale Linting
+        uses: errata-ai/vale-action@v2
+        with:
+          files: homebox/README.md
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} 

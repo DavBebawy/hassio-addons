@@ -1,0 +1,9 @@
+{
+  "github_beta": "true",
+  "last_update": "29-03-2024",
+  "repository": "davbebawy/hassio-addons",
+  "slug": "homebox",
+  "source": "github",
+  "upstream_repo": "sysadminsmedia/homebox",
+  "upstream_version": "latest"
+} 
