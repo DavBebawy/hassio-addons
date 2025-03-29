@@ -28,7 +28,7 @@ mkdir -p /etc/cont-init.d
 
 # Download scripts
 for scripts in $MODULES; do
-    echo "$scripts" && curl -f -L -s -S "https://raw.githubusercontent.com/davbebawy/hassio-addons/main/.templates/$scripts" -o /etc/cont-init.d/"$scripts" &&
+    echo "$scripts" && curl -f -L -s -S "https://raw.githubusercontent.com/davbebawy/hassio-addons/refs/heads/main/.templates/$scripts" -o /etc/cont-init.d/"$scripts" &&
     [ "$(sed -n '/\/bin/p;q' /etc/cont-init.d/"$scripts")" != "" ] ||
     (echo "script failed to install $scripts" && exit 1)
 done

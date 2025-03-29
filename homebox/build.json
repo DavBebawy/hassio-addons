@@ -5,6 +5,6 @@
     "armv7": "ghcr.io/sysadminsmedia/homebox:latest"
   },
   "codenotary": {
-    "signer": "52139648+DavBebawy@users.noreply.github.com"
+    "signer": "52139648+davbebawy@users.noreply.github.com"
   }
 } 
