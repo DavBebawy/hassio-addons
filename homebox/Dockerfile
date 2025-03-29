@@ -79,7 +79,11 @@ RUN echo "#!/usr/bin/with-contenv bashio" > /etc/cont-init.d/00-smb_mounts.sh &&
     echo "    echo \"Network disks = \$NETWORKDISKS\"" >> /etc/cont-init.d/00-smb_mounts.sh && \
     echo "" >> /etc/cont-init.d/00-smb_mounts.sh && \
     echo "    # Install necessary tools" >> /etc/cont-init.d/00-smb_mounts.sh && \
-    echo "    apt-get update || apk add --no-cache cifs-utils" >> /etc/cont-init.d/00-smb_mounts.sh && \
+    echo "    if command -v apt-get >/dev/null 2>&1; then" >> /etc/cont-init.d/00-smb_mounts.sh && \
+    echo "        apt-get update && apt-get install -y --no-install-recommends cifs-utils" >> /etc/cont-init.d/00-smb_mounts.sh && \
+    echo "    elif command -v apk >/dev/null 2>&1; then" >> /etc/cont-init.d/00-smb_mounts.sh && \
+    echo "        apk add --no-cache cifs-utils" >> /etc/cont-init.d/00-smb_mounts.sh && \
+    echo "    fi" >> /etc/cont-init.d/00-smb_mounts.sh && \
     echo "" >> /etc/cont-init.d/00-smb_mounts.sh && \
     echo "    # Setup credentials" >> /etc/cont-init.d/00-smb_mounts.sh && \
     echo "    if bashio::config.has_value \"cifsusername\" && bashio::config.has_value \"cifspassword\"; then" >> /etc/cont-init.d/00-smb_mounts.sh && \
@@ -106,15 +110,19 @@ RUN echo "#!/usr/bin/with-contenv bashio" > /etc/cont-init.d/00-smb_mounts.sh &&
     echo "fi" >> /etc/cont-init.d/00-smb_mounts.sh && \
     chmod 755 /etc/cont-init.d/00-smb_mounts.sh
 
-# Install packages
-# hadolint ignore=DL3018
+# Install packages based on system type
+# hadolint ignore=DL3008,DL3018
 SHELL ["/bin/bash", "-o", "pipefail", "-c"]
-RUN apt-get update \
-    && apt-get install -y --no-install-recommends curl ca-certificates \
-    && apt-get install -y --no-install-recommends bind-tools nginx \
-    || apk add --no-cache curl ca-certificates bind-tools nginx \
-    && apt-get clean \
-    && rm -rf /var/lib/apt/lists/*
+RUN if command -v apt-get >/dev/null 2>&1; then \
+        # Debian/Ubuntu system \
+        apt-get update \
+        && apt-get install -y --no-install-recommends curl ca-certificates dnsutils nginx \
+        && apt-get clean \
+        && rm -rf /var/lib/apt/lists/*; \
+    elif command -v apk >/dev/null 2>&1; then \
+        # Alpine system \
+        apk --no-cache add curl ca-certificates bind-tools nginx; \
+    fi
 
 # Install bashio - included in the Home Assistant base image
 COPY rootfs/usr/bin/bashio /usr/bin/bashio
