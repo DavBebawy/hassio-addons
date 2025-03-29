@@ -47,18 +47,67 @@ jobs:
           name=$(jq --raw-output ".name" homebox/config.json)
           echo "version=${version}" >> $GITHUB_OUTPUT
           echo "name=${name}" >> $GITHUB_OUTPUT
+          
+          # Get build information for each architecture
+          BUILD_FROM_AMD64=$(jq --raw-output ".build_from.amd64" homebox/build.json)
+          BUILD_FROM_ARMV7=$(jq --raw-output ".build_from.armv7" homebox/build.json)
+          BUILD_FROM_AARCH64=$(jq --raw-output ".build_from.aarch64" homebox/build.json)
+          
+          echo "build_from_amd64=${BUILD_FROM_AMD64}" >> $GITHUB_OUTPUT
+          echo "build_from_armv7=${BUILD_FROM_ARMV7}" >> $GITHUB_OUTPUT
+          echo "build_from_aarch64=${BUILD_FROM_AARCH64}" >> $GITHUB_OUTPUT
 
-      - name: Build and push
+      # Build AMD64 version
+      - name: Build and push AMD64
         uses: docker/build-push-action@v3
         with:
           context: ./homebox
           file: ./homebox/Dockerfile
-          platforms: linux/amd64,linux/arm64,linux/arm/v7
+          platforms: linux/amd64
           push: true
-          tags: ${{ steps.meta.outputs.tags }}
+          tags: ghcr.io/${{ github.repository_owner }}/homebox-amd64:${{ steps.addon.outputs.version }}
           build-args: |
+            BUILD_FROM=${{ steps.addon.outputs.build_from_amd64 }}
             BUILD_VERSION=${{ steps.addon.outputs.version }}
             BUILD_ARCH=amd64
+            BUILD_NAME=${{ steps.addon.outputs.name }}
+            BUILD_DESCRIPTION="HomeBox add-on for Home Assistant"
+            BUILD_REPOSITORY=${{ github.repository }}
+            BUILD_REF=${{ github.sha }}
+            BUILD_DATE=$(date +"%Y-%m-%dT%H:%M:%SZ")
+
+      # Build ARMv7 version
+      - name: Build and push ARMv7
+        uses: docker/build-push-action@v3
+        with:
+          context: ./homebox
+          file: ./homebox/Dockerfile
+          platforms: linux/arm/v7
+          push: true
+          tags: ghcr.io/${{ github.repository_owner }}/homebox-armv7:${{ steps.addon.outputs.version }}
+          build-args: |
+            BUILD_FROM=${{ steps.addon.outputs.build_from_armv7 }}
+            BUILD_VERSION=${{ steps.addon.outputs.version }}
+            BUILD_ARCH=armv7
+            BUILD_NAME=${{ steps.addon.outputs.name }}
+            BUILD_DESCRIPTION="HomeBox add-on for Home Assistant"
+            BUILD_REPOSITORY=${{ github.repository }}
+            BUILD_REF=${{ github.sha }}
+            BUILD_DATE=$(date +"%Y-%m-%dT%H:%M:%SZ")
+
+      # Build AARCH64 version
+      - name: Build and push AARCH64
+        uses: docker/build-push-action@v3
+        with:
+          context: ./homebox
+          file: ./homebox/Dockerfile
+          platforms: linux/arm64
+          push: true
+          tags: ghcr.io/${{ github.repository_owner }}/homebox-aarch64:${{ steps.addon.outputs.version }}
+          build-args: |
+            BUILD_FROM=${{ steps.addon.outputs.build_from_aarch64 }}
+            BUILD_VERSION=${{ steps.addon.outputs.version }}
+            BUILD_ARCH=aarch64
             BUILD_NAME=${{ steps.addon.outputs.name }}
             BUILD_DESCRIPTION="HomeBox add-on for Home Assistant"
             BUILD_REPOSITORY=${{ github.repository }}

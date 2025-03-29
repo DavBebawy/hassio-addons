@@ -37,6 +37,10 @@ jobs:
           echo "version=${version}" >> $GITHUB_OUTPUT
           name=$(jq --raw-output ".name" homebox/config.json)
           echo "name=${name}" >> $GITHUB_OUTPUT
+          
+          # Get build information for the current architecture
+          build_from=$(jq --raw-output ".build_from.${{ matrix.arch }}" homebox/build.json)
+          echo "build_from=${build_from}" >> $GITHUB_OUTPUT
 
       - name: Build and push
         uses: docker/build-push-action@v3
@@ -49,6 +53,7 @@ jobs:
             ghcr.io/${{ github.repository_owner }}/homebox-${{ matrix.arch }}:latest
             ghcr.io/${{ github.repository_owner }}/homebox-${{ matrix.arch }}:${{ steps.addon.outputs.version }}
           build-args: |
+            BUILD_FROM=${{ steps.addon.outputs.build_from }}
             BUILD_VERSION=${{ steps.addon.outputs.version }}
             BUILD_ARCH=${{ matrix.arch }}
             BUILD_NAME=${{ steps.addon.outputs.name }}
