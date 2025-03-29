@@ -1,0 +1,6 @@
+extends: existence
+message: "Possible spelling error: '%s'"
+level: suggestion
+ignorecase: true
+tokens:
+  - \b[a-zA-Z]+[^s\W]\b 

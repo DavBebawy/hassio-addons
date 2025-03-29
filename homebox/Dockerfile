@@ -31,32 +31,113 @@ COPY rootfs/ /
 RUN if [ ! -f /bin/sh ] && [ -f /usr/bin/sh ]; then ln -s /usr/bin/sh /bin/sh; fi && \
     if [ ! -f /bin/bash ] && [ -f /usr/bin/bash ]; then ln -s /usr/bin/bash /bin/bash; fi
 
-# Modules
-ARG MODULES="00-banner.sh 01-custom_script.sh 00-local_mounts.sh 00-smb_mounts.sh"
+# Create required directories
+RUN mkdir -p /etc/cont-init.d
 
-# Automatic modules download
-ADD "https://raw.githubusercontent.com/davbebawy/hassio-addons/refs/heads/main/.templates/ha_automodules.sh" "/ha_automodules.sh"
-RUN chmod 744 /ha_automodules.sh && /ha_automodules.sh "$MODULES" && rm /ha_automodules.sh
+# Create banner script
+RUN echo '#!/usr/bin/with-contenv bashio' > /etc/cont-init.d/00-banner.sh && \
+    echo '# ==============================================================================' >> /etc/cont-init.d/00-banner.sh && \
+    echo 'echo "HomeBox Add-on for Home Assistant"' >> /etc/cont-init.d/00-banner.sh && \
+    echo 'echo "Powered by DavBebawy"' >> /etc/cont-init.d/00-banner.sh && \
+    echo 'echo "Addon repository: https://github.com/davbebawy/hassio-addons"' >> /etc/cont-init.d/00-banner.sh && \
+    echo 'echo "Original application: https://github.com/sysadminsmedia/homebox"' >> /etc/cont-init.d/00-banner.sh && \
+    chmod 755 /etc/cont-init.d/00-banner.sh
 
-# Manual apps
-ENV PACKAGES="bind-tools \
-    nginx"
+# Create custom script file
+RUN echo '#!/usr/bin/with-contenv bashio' > /etc/cont-init.d/01-custom_script.sh && \
+    echo '# ==============================================================================' >> /etc/cont-init.d/01-custom_script.sh && \
+    echo '# Run user custom scripts if configured' >> /etc/cont-init.d/01-custom_script.sh && \
+    echo '# ==============================================================================' >> /etc/cont-init.d/01-custom_script.sh && \
+    chmod 755 /etc/cont-init.d/01-custom_script.sh
 
-# Automatic apps & bashio
-ADD "https://raw.githubusercontent.com/davbebawy/hassio-addons/refs/heads/main/.templates/ha_autoapps.sh" "/ha_autoapps.sh"
-RUN chmod 744 /ha_autoapps.sh && /ha_autoapps.sh "$PACKAGES" && rm /ha_autoapps.sh
+# Create local mount script
+RUN echo '#!/usr/bin/with-contenv bashio' > /etc/cont-init.d/00-local_mounts.sh && \
+    echo '# ==============================================================================' >> /etc/cont-init.d/00-local_mounts.sh && \
+    echo '# Mount local disks' >> /etc/cont-init.d/00-local_mounts.sh && \
+    echo '# ==============================================================================' >> /etc/cont-init.d/00-local_mounts.sh && \
+    echo 'if bashio::config.has_value "localdisks"; then' >> /etc/cont-init.d/00-local_mounts.sh && \
+    echo '    LOCALDISKS=$(bashio::config "localdisks")' >> /etc/cont-init.d/00-local_mounts.sh && \
+    echo '    echo "Local disks = $LOCALDISKS"' >> /etc/cont-init.d/00-local_mounts.sh && \
+    echo '    for disk in $LOCALDISKS; do' >> /etc/cont-init.d/00-local_mounts.sh && \
+    echo '        device="${disk%%=*}"' >> /etc/cont-init.d/00-local_mounts.sh && \
+    echo '        mount_point="${disk##*=}"' >> /etc/cont-init.d/00-local_mounts.sh && \
+    echo '        echo "Mount $device to $mount_point"' >> /etc/cont-init.d/00-local_mounts.sh && \
+    echo '        mkdir -p "$mount_point"' >> /etc/cont-init.d/00-local_mounts.sh && \
+    echo '        mount "$device" "$mount_point"' >> /etc/cont-init.d/00-local_mounts.sh && \
+    echo '    done' >> /etc/cont-init.d/00-local_mounts.sh && \
+    echo 'fi' >> /etc/cont-init.d/00-local_mounts.sh && \
+    chmod 755 /etc/cont-init.d/00-local_mounts.sh
+
+# Create SMB mounts script
+RUN echo '#!/usr/bin/with-contenv bashio' > /etc/cont-init.d/00-smb_mounts.sh && \
+    echo '# ==============================================================================' >> /etc/cont-init.d/00-smb_mounts.sh && \
+    echo '# Mount SMB share' >> /etc/cont-init.d/00-smb_mounts.sh && \
+    echo '# ==============================================================================' >> /etc/cont-init.d/00-smb_mounts.sh && \
+    echo 'if bashio::config.has_value "networkdisks"; then' >> /etc/cont-init.d/00-smb_mounts.sh && \
+    echo '    NETWORKDISKS=$(bashio::config "networkdisks")' >> /etc/cont-init.d/00-smb_mounts.sh && \
+    echo '    echo "Network disks = $NETWORKDISKS"' >> /etc/cont-init.d/00-smb_mounts.sh && \
+    echo '' >> /etc/cont-init.d/00-smb_mounts.sh && \
+    echo '    # Install necessary tools' >> /etc/cont-init.d/00-smb_mounts.sh && \
+    echo '    apt-get update || apk add --no-cache cifs-utils' >> /etc/cont-init.d/00-smb_mounts.sh && \
+    echo '' >> /etc/cont-init.d/00-smb_mounts.sh && \
+    echo '    # Setup credentials' >> /etc/cont-init.d/00-smb_mounts.sh && \
+    echo '    if bashio::config.has_value "cifsusername" && bashio::config.has_value "cifspassword"; then' >> /etc/cont-init.d/00-smb_mounts.sh && \
+    echo '        SMB_USER=$(bashio::config "cifsusername")' >> /etc/cont-init.d/00-smb_mounts.sh && \
+    echo '        SMB_PWD=$(bashio::config "cifspassword")' >> /etc/cont-init.d/00-smb_mounts.sh && \
+    echo '        SMB_DOMAIN=$(bashio::config "cifsdomain")' >> /etc/cont-init.d/00-smb_mounts.sh && \
+    echo '' >> /etc/cont-init.d/00-smb_mounts.sh && \
+    echo '        echo "username=$SMB_USER" > /etc/cifspasswd' >> /etc/cont-init.d/00-smb_mounts.sh && \
+    echo '        echo "password=$SMB_PWD" >> /etc/cifspasswd' >> /etc/cont-init.d/00-smb_mounts.sh && \
+    echo '        [ -n "$SMB_DOMAIN" ] && echo "domain=$SMB_DOMAIN" >> /etc/cifspasswd' >> /etc/cont-init.d/00-smb_mounts.sh && \
+    echo '' >> /etc/cont-init.d/00-smb_mounts.sh && \
+    echo '        CIFS_OPTIONS="credentials=/etc/cifspasswd,iocharset=utf8,vers=3.0,noperm"' >> /etc/cont-init.d/00-smb_mounts.sh && \
+    echo '    else' >> /etc/cont-init.d/00-smb_mounts.sh && \
+    echo '        CIFS_OPTIONS="guest,iocharset=utf8,vers=3.0,noperm"' >> /etc/cont-init.d/00-smb_mounts.sh && \
+    echo '    fi' >> /etc/cont-init.d/00-smb_mounts.sh && \
+    echo '' >> /etc/cont-init.d/00-smb_mounts.sh && \
+    echo '    for disk in $NETWORKDISKS; do' >> /etc/cont-init.d/00-smb_mounts.sh && \
+    echo '        device="${disk%%=*}"' >> /etc/cont-init.d/00-smb_mounts.sh && \
+    echo '        mount_point="${disk##*=}"' >> /etc/cont-init.d/00-smb_mounts.sh && \
+    echo '        echo "Mount $device to $mount_point"' >> /etc/cont-init.d/00-smb_mounts.sh && \
+    echo '        mkdir -p "$mount_point"' >> /etc/cont-init.d/00-smb_mounts.sh && \
+    echo '        mount -t cifs "$device" "$mount_point" -o "$CIFS_OPTIONS"' >> /etc/cont-init.d/00-smb_mounts.sh && \
+    echo '    done' >> /etc/cont-init.d/00-smb_mounts.sh && \
+    echo 'fi' >> /etc/cont-init.d/00-smb_mounts.sh && \
+    chmod 755 /etc/cont-init.d/00-smb_mounts.sh
+
+# Install packages
+RUN apt-get update || apk add --no-cache bind-tools nginx
+
+# Install bashio if required
+RUN if [ ! -f /usr/bin/bashio ]; then \
+        mkdir -p /tmp/bashio && \
+        curl -L -s "https://github.com/hassio-addons/bashio/archive/v0.15.0.tar.gz" | tar -xzf - -C /tmp/bashio && \
+        mv /tmp/bashio/bashio-*/lib /usr/lib/bashio && \
+        ln -s /usr/lib/bashio/bashio /usr/bin/bashio && \
+        rm -rf /tmp/bashio; \
+    fi
 
 ################
 # 4 Entrypoint #
 ################
 
-# Add entrypoint
+# Create entrypoint script
 ENV S6_STAGE2_HOOK=/ha_entrypoint.sh
-ADD "https://raw.githubusercontent.com/davbebawy/hassio-addons/refs/heads/main/.templates/ha_entrypoint.sh" "/ha_entrypoint.sh"
-
-# Entrypoint modifications
-ADD "https://raw.githubusercontent.com/davbebawy/hassio-addons/refs/heads/main/.templates/ha_entrypoint_modif.sh" "/ha_entrypoint_modif.sh"
-RUN chmod 777 /ha_entrypoint.sh /ha_entrypoint_modif.sh && /ha_entrypoint_modif.sh && rm /ha_entrypoint_modif.sh
+RUN echo '#!/command/with-contenv bash' > /ha_entrypoint.sh && \
+    echo '# shellcheck shell=bash' >> /ha_entrypoint.sh && \
+    echo 'set -e' >> /ha_entrypoint.sh && \
+    echo '' >> /ha_entrypoint.sh && \
+    echo '# Init' >> /ha_entrypoint.sh && \
+    echo 'echo "Running HomeBox entrypoint script"' >> /ha_entrypoint.sh && \
+    echo '' >> /ha_entrypoint.sh && \
+    echo '# Execute command' >> /ha_entrypoint.sh && \
+    echo 'if [[ $# -gt 0 ]]; then' >> /ha_entrypoint.sh && \
+    echo '    exec "$@"' >> /ha_entrypoint.sh && \
+    echo 'else' >> /ha_entrypoint.sh && \
+    echo '    # Run s6-overlay init system' >> /ha_entrypoint.sh && \
+    echo '    exec "/init"' >> /ha_entrypoint.sh && \
+    echo 'fi' >> /ha_entrypoint.sh && \
+    chmod 755 /ha_entrypoint.sh
 
 VOLUME [ "/data" ]
 WORKDIR /
