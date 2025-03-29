@@ -1,0 +1,13 @@
+#!/bin/bash
+# Wrapper for the bashio included in Home Assistant Supervisor base images
+if [ -f /usr/lib/bashio/bashio.sh ]; then
+    # Use the bashio script included in the base image
+    /usr/lib/bashio/bashio.sh "$@"
+elif [ -f /usr/lib/bashio/bashio ]; then
+    # Use the bashio binary included in the base image
+    /usr/lib/bashio/bashio "$@"
+else
+    # If bashio isn't installed, print an error
+    echo "Bashio is not installed. This add-on requires a Home Assistant base image." >&2
+    exit 1
+fi 
